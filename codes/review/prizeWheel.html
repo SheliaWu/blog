@@ -1,0 +1,176 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>大转盘</title>
+  <style>
+    body{
+      font-size: 16px;
+    }
+    #mycanvas{
+      margin:20px auto;
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
+    .config{
+      width:500px;
+      height: 50px;
+      margin:20px auto;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+    }
+    label{
+      margin:10px;
+    }
+    input{
+      width: 100px;
+      height: 30px;
+      margin:10px;
+    }
+    .btn{
+      display: inline-block;
+      width:80px;
+      height: 30px;
+      border-radius: 5px;
+      background-color:#eee;
+      text-align: center;
+      line-height: 30px;
+    }
+  </style>
+</head>
+<body>
+  <canvas width="300" height="300" id="mycanvas"></canvas>
+  <div class="config">
+    <label>停止区间:</label>
+    <input type="number" class="result" min="1" max="6"></input>
+    <span class="btn">开始</span>
+  </div>
+  <script>
+    var canvas = document.querySelector('#mycanvas')
+    var context = canvas.getContext("2d")
+    var width = canvas.width
+    var height = canvas.height
+    var radius = 100
+    var textRadius = 70
+    var margin = 50
+    var fontHeight = 16
+    var awards = ["奖品1","奖品2","谢谢惠顾","奖品3","奖品4","奖品5"]
+    var radian = Math.PI*2/awards.length
+    var startRadian = 0
+    var resultRadian = 0
+    var autoFlag = true
+    //运动有关变量
+   var movingTime = 0,
+       changeRadian,
+       totalTime,
+       duration = 4500,
+       velocity =  10,
+       randomRadian
+
+    function drawCircle(x,y){
+      for(let i = 0; i < awards.length; i++){
+        let _startRadian = startRadian + radian * i,
+        _endRadian = _startRadian + radian
+        context.save()
+        if(i%2 === 0) context.fillStyle = '#FF6766'
+        else context.fillStyle = '#FD5757'
+        context.beginPath()
+        context.arc(width/2, height/2, radius, _startRadian, _endRadian, false)
+        context.arc(width/2, height/2, 0, _endRadian, _startRadian, false)
+        context.fill()
+        context.restore()
+        context.save()
+        context.font = 'bold 16px Helvetica, Arial';
+        context.fillStyle = '#FFF';
+        context.translate(
+          width/2 + Math.cos(_startRadian + radian / 2) * textRadius,
+          height/2 + Math.sin(_startRadian + radian / 2) * textRadius
+        );
+        context.rotate(_startRadian + radian / 2 + Math.PI / 2);
+        context.fillText(awards[i], -context.measureText(awards[i]).width / 2, 0);
+        context.restore();
+      }
+      context.save()
+      context.fillStyle = 'yellow';
+      context.beginPath()
+      context.moveTo(width/2 - 5, height/2)
+      context.lineTo(width/2, height/2 - 20)
+      context.lineTo(width/2 + 5, height/2)
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+
+    function draw()
+    {
+      context.clearRect(0,0,width,height)
+      drawCircle()
+    }
+    /**
+    * 缓动函数，由快到慢
+    * @param {Num} t 当前时间
+    * @param {Num} b 初始值
+    * @param {Num} c 变化值
+    * @param {Num} d 持续时间
+    */
+    function easeOut(t, b, c, d) {
+        if ((t /= d / 2) < 1) return c / 2 * t * t + b;
+        return -c / 2 * ((--t) * (t - 2) - 1) + b;
+    };
+    
+    function getValue(){
+      let startAngle = startRadian * 180 / Math.PI,
+          awardAngle = radian *  180 / Math.PI
+          originAngle = 90,
+          overAngle = (startAngle+originAngle) % 360,
+          restAngle = 360 - overAngle,
+          index = Math.floor(restAngle/awardAngle);
+      return index
+    }
+
+    function move(){
+      if(!autoFlag){
+        let _changeRadian = (resultRadian - startRadian) / 100
+        startRadian += _changeRadian
+        if(resultRadian - startRadian <= 0.05){
+          let index = getValue()
+          alert("您抽中的奖品是:"+awards[index])
+          return  
+        }
+      }else{
+        movingTime += 20
+        if(movingTime >= totalTime){
+          let index = getValue()
+          alert("您抽中的奖品是:"+awards[index])
+          return  
+        }
+        let _changeRadian = (changeRadian - easeOut(movingTime,0,changeRadian,totalTime))*(Math.PI/180)
+        startRadian += _changeRadian
+      }
+      draw()
+      window.requestAnimationFrame(move)
+    }
+    window.onload = function(){
+      draw()
+    }
+    var inputDiv = document.querySelector('.result')
+    var btn = document.querySelector('.btn')
+    btn.addEventListener('click',function(){
+      var result = inputDiv.value
+      if(result != ""){
+        autoFlag = false
+        startRadian = 0
+        randomRadian = Math.random() * radian
+        resultRadian = Math.PI*4+Math.ceil(Math.random() * 3) * 2 * Math.PI+radian*(result-1)+randomRadian
+      }
+      movingTime = 0
+      totalTime = Math.random() * 3 + duration
+      changeRadian = Math.random() * 10 + velocity
+      move()
+    })
+  </script>
+</body>
+</html>
